@@ -3,7 +3,7 @@ package bankoffers;
 import java.util.*;
 import java.io.*;
 import java.text.ParseException;
-//import java.text.SimpleDateFormat;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 
 import org.openqa.selenium.*;
@@ -14,7 +14,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class BankScraper {
-
+    String BankName;
     String DRIVER_NAME;
     String DRIVER_PATH;
     String LOGIN_URL;
@@ -58,7 +58,7 @@ public class BankScraper {
     public BankScraper(BankType bank) {
 
         DRIVER_NAME = "webdriver.chrome.driver";
-        DRIVER_PATH = "C:\\Users\\kevin\\OneDrive\\Documents\\Programming\\ProjectsCreditCardRewards\\main\\resources\\chromedriver_win32\\chromedriver.exe";
+        DRIVER_PATH = "CreditCardRewards\\main\\resources\\chromedriver_win32\\chromedriver.exe";
 
         switch (bank) {
             case BANK_OF_AMERICA:
@@ -157,29 +157,44 @@ public class BankScraper {
 
             // Value of deal as percent or $ amount
             String value = valueElements.get(i).getAttribute(VALUE_ATTRIBUTE);
-            // Double percent = 0.0;
-            // Double amount = 0.0;
-            // Double minimum;
-            // Double maximum;
-            // if (value.contains("%")) {
-            // percent = Double.parseDouble(value.replace("%", "")) / 100;
-            // }
-            // if (value.contains("$")) {
-            // amount = Double.parseDouble(value.replace("$", ""));
-            // }
 
             // Expiration date
             String expirationText = expirationElements.get(i).getAttribute(EXPIRATION_ATTRIBUTE).replace("Exp.", "");
             // SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yy");
             // Date expirationDate = formatter.parse(expirationText);
 
-            System.out.println("Vendor=" + vendor + " Value=" + value + " " + " Exp="
-                    + expirationText);
+            // Create Offer object
+            double[] valueList = parseBOAValue(value);
+            Offer sample = new Offer(BankName, parseBOAVendor(vendor), valueList[0], valueList[1], valueList[2],
+                    valueList[3], parseBOAExpiration(expirationText));
+            System.out.println(sample.toString());
 
-            // Create deal? or insert to database?
         }
         // Runtime.getRuntime().exec("taskkill /F /IM chromedriver.exe /T");
         return 0;
+    }
+
+    private static String parseBOAVendor(String vendor) {
+        return vendor.substring(0, vendor.length() - 6);
+    }
+
+    private static double[] parseBOAValue(String value) {
+        Double percent = 0.0;
+        Double amount = 0.0;
+        Double minimum = 0.0;
+        Double maximum = 99999.9;
+        if (value.contains("%")) {
+            percent = Double.parseDouble(value.replace("%", "")) / 100;
+        }
+        if (value.contains("$")) {
+            amount = Double.parseDouble(value.replace("$", ""));
+        }
+        return new double[] { percent, amount, minimum, maximum };
+    }
+
+    private static Date parseBOAExpiration(String expirationText) throws ParseException {
+        SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yy");
+        return formatter.parse(expirationText);
     }
 
 }

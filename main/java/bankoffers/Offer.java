@@ -3,19 +3,22 @@ package bankoffers;
 import java.util.*;
 
 public class Offer {
-    private String card;
-    private String vendor;
-    private Double percent;
-    private Double amount;
-    private Double minimum;
-    private Date expiration;
+    private final String card;
+    private final String vendor;
+    private final Double percent;
+    private final Double amount;
+    private final Double minimum; // minimum spent to avail
+    private final Double maximum; // maximum reward
+    private final Date expiration;
 
-    public Offer(String card, String vendor, Double percent, Double amount, Double minimum, Date expiration) {
+    public Offer(String card, String vendor, Double percent, Double amount, Double min, Double max,
+            Date expiration) {
         this.card = card;
         this.vendor = vendor;
         this.percent = percent;
         this.amount = amount;
-        this.minimum = minimum;
+        this.minimum = min;
+        this.maximum = max;
         this.expiration = expiration;
     }
 
@@ -37,6 +40,11 @@ public class Offer {
             return 0.0;
     }
 
+    public String toString() {
+        return ("Card:" + card + " Vendor:" + vendor + " Percent:" + percent + " Amount:" + amount + " Minimum:"
+                + minimum + " Maximum:" + maximum + " Expiration:" + expiration);
+    }
+
     // getters
     public String getCard() {
         return card;
@@ -56,6 +64,10 @@ public class Offer {
 
     public Double getMinimum() {
         return minimum;
+    }
+
+    public Double getMaximum() {
+        return maximum;
     }
 
     public Date getExpiration() {
