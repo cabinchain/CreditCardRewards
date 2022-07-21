@@ -2,6 +2,7 @@ package bankoffers;
 
 //import java.util.*;
 import java.io.*;
+import java.sql.SQLException;
 import java.text.ParseException;
 //import java.text.SimpleDateFormat;
 
@@ -12,10 +13,13 @@ import java.text.ParseException;
 
 public class Main {
 
-    public static void main(String[] args) throws InterruptedException, ParseException, IOException {
+    public static void main(String[] args) throws InterruptedException, ParseException, IOException, SQLException {
 
-        BankScraper bankOfAmerica = BankScraper.forBankOfAmerica();
-        bankOfAmerica.scrape();
+        // BankScraper bankOfAmerica = BankScraper.forBankOfAmerica();
+        // bankOfAmerica.scrape();
+
+        BankScraper amex = BankScraper.forAmericanExpress();
+        amex.scrape();
 
     }
 }

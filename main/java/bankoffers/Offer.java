@@ -11,8 +11,7 @@ public class Offer {
     private final Double maximum; // maximum reward
     private final Date expiration;
 
-    public Offer(String card, String vendor, Double percent, Double amount, Double min, Double max,
-            Date expiration) {
+    public Offer(String card, String vendor, Double percent, Double amount, Double min, Double max, Date expiration) {
         this.card = card;
         this.vendor = vendor;
         this.percent = percent;
