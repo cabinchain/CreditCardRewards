@@ -3,11 +3,12 @@ package bankoffers;
 import java.sql.*;
 
 public class DBReadWrite {
-
     // Variables
     private Connection connection;
     private PreparedStatement newOfferStmt;
-    private PreparedStatement searchByVendor;
+    private PreparedStatement searchByVendorStmt;
+    private PreparedStatement selectOfferStmt;
+    private PreparedStatement useOfferStmt;
 
     // Constructor
     public DBReadWrite() throws SQLException {
@@ -32,19 +33,15 @@ public class DBReadWrite {
 
         String newOfferString = "INSERT INTO offers (Bank_Name, Use_Type, Vendor, Percent, Amount, Min_Spend, Max_Return, Expiration_Date) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
         newOfferStmt = connection.prepareStatement(newOfferString, Statement.RETURN_GENERATED_KEYS);
-        String searchByVendorString = "SELECT * FROM offers WHERE Vendor = ?";
-        searchByVendor = connection.prepareStatement(searchByVendorString, Statement.RETURN_GENERATED_KEYS);
+        String searchByVendorString = "SELECT * FROM offers WHERE Vendor LIKE ?";
+        searchByVendorStmt = connection.prepareStatement(searchByVendorString, Statement.RETURN_GENERATED_KEYS);
+        String selectOfferString = "SELECT * FROM offers WHERE Offer_ID = ? AND Date_Used IS NULL";
+        selectOfferStmt = connection.prepareStatement(selectOfferString, Statement.RETURN_GENERATED_KEYS);
+        String useOfferString = "UPDATE offers SET Date_Used = ?, Amount_Saved = ? WHERE Offer_ID = ?";
+        useOfferStmt = connection.prepareStatement(useOfferString, Statement.RETURN_GENERATED_KEYS);
     }
 
     public boolean close() {
-        // try {
-        // rs.close();
-        // stmt.close();
-        // pstmt.close();
-        // } catch (SQLException e) {
-        // System.out.println(e.getMessage());
-        // }
-        // close connection
         try {
             if (connection != null)
                 connection.close();
@@ -57,7 +54,7 @@ public class DBReadWrite {
     }
 
     public int write(Offer newOffer) throws SQLException { // Returns offer_id of new item written
-        newOfferStmt.setString(1, newOffer.getCard());
+        newOfferStmt.setString(1, newOffer.getBank());
         newOfferStmt.setString(2, "Single");
         newOfferStmt.setString(3, newOffer.getVendor());
         newOfferStmt.setDouble(4, newOffer.getPercent());
@@ -65,19 +62,12 @@ public class DBReadWrite {
         newOfferStmt.setDouble(6, newOffer.getMinimum());
         newOfferStmt.setDouble(7, newOffer.getMaximum());
         newOfferStmt.setDate(8, new java.sql.Date(newOffer.getExpiration().getTime()));
-        int rowAffected = newOfferStmt.executeUpdate();
-        System.out.println(rowAffected);
+        newOfferStmt.executeUpdate();
         ResultSet newIDRS = newOfferStmt.getGeneratedKeys(); // this doesn't return anything if you select the key
                                                              // yourself
         newIDRS.next();
         int newID = newIDRS.getInt(1);
         return newID;
-    }
-
-    public ResultSet searchByVendor(String vendor) throws SQLException {
-        searchByVendor.setString(1, vendor);
-        ResultSet foundVendors = searchByVendor.executeQuery();
-        return foundVendors;
     }
 
     public void displayResults(ResultSet rs) throws SQLException {
@@ -88,6 +78,7 @@ public class DBReadWrite {
                 System.out.print(",  ");
             System.out.print(rsmd.getColumnName(i));
         }
+        System.out.println("");
         while (rs.next()) {
             for (int i = 1; i <= columnsNumber; i++) {
                 if (i > 1)
@@ -98,11 +89,40 @@ public class DBReadWrite {
         }
     }
 
-    // rs = stmt.executeQuery("SELECT * from city WHERE name = 'testcity'");
-    // rs.next();
-    // System.out.println(rs.getString("ID") + " " + rs.getString("Name") + " " +
-    // rs.getString("district"));
+    public ResultSet searchByVendor(String vendor) throws SQLException {
+        searchByVendorStmt.setString(1, "%" + vendor + "%");
+        ResultSet foundVendors = searchByVendorStmt.executeQuery();
+        return foundVendors;
+    }
 
-    // stmt.execute("DELETE FROM city WHERE name = 'testcity'");
+    public Offer selectOffer(int id) throws SQLException {
+        selectOfferStmt.setInt(1, id);
+        ResultSet rs = selectOfferStmt.executeQuery();
+        while (rs.next()) {
+            return new Offer(rs.getString(2), rs.getString(4), rs.getDouble(5),
+                    rs.getDouble(6), rs.getDouble(7),
+                    rs.getDouble(8), rs.getDate(9));
+        }
+        System.out.println("No eligible offers");
+        return null;
+    }
+
+    public double checkOffer(int id, double spending) throws SQLException {
+        Offer o = this.selectOffer(id);
+        return o.expectedSavings(spending);
+    }
+
+    public double useOffer(int id, double spending) throws SQLException {
+
+        double savings = this.checkOffer(id, spending);
+
+        // Update table
+        useOfferStmt.setDate(1, java.sql.Date.valueOf(java.time.LocalDate.now()));
+        useOfferStmt.setDouble(2, savings);
+        useOfferStmt.setInt(3, id);
+        useOfferStmt.executeUpdate();
+
+        return savings;
+    }
 
 }

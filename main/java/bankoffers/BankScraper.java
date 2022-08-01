@@ -1,6 +1,7 @@
 package bankoffers;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.io.*;
 import java.sql.SQLException;
 import java.text.ParseException;
@@ -123,7 +124,7 @@ public class BankScraper {
 
     }
 
-    public int scrape() throws InterruptedException, ParseException, IOException, SQLException {
+    public List<Offer> scrape() throws InterruptedException, ParseException, IOException, SQLException {
         // Returns the number of new items added
 
         // Initialize all drivers
@@ -165,20 +166,26 @@ public class BankScraper {
         List<WebElement> vendorElements = driver.findElements(By.xpath(VENDOR_NAME_ELEMENT));
         List<WebElement> valueElements = driver.findElements(By.xpath(VALUE_ELEMENT));
         List<WebElement> expirationElements = driver.findElements(By.xpath(EXPIRATION_ELEMENT));
-        DBReadWrite dbrw = new DBReadWrite();
 
-        for (int i = 0; i < vendorElements.size(); i++) {
+        List<String> vendorStrings = vendorElements.stream().map(ele -> ele.getAttribute(VENDOR_NAME_ATTRIBUTE))
+                .collect(Collectors.toList());
+        List<String> valueStrings = valueElements.stream().map(ele -> ele.getAttribute(VALUE_ATTRIBUTE))
+                .collect(Collectors.toList());
+        List<String> expirationStrings = expirationElements.stream().map(ele -> ele.getAttribute(EXPIRATION_ATTRIBUTE))
+                .collect(Collectors.toList());
 
-            // Vendor name
-            String vendor = vendorElements.get(i).getAttribute(VENDOR_NAME_ATTRIBUTE);
+        return this.createOffers(vendorStrings, valueStrings, expirationStrings);
+        // Runtime.getRuntime().exec("taskkill /F /IM chromedriver.exe /T");
+    }
 
-            // Value of deal as percent or $ amount
-            String value = valueElements.get(i).getAttribute(VALUE_ATTRIBUTE);
+    private List<Offer> createOffers(List<String> vendors, List<String> values, List<String> expirations)
+            throws ParseException {
+        List<Offer> scrapedOffers = new ArrayList<Offer>();
+        for (int i = 0; i < vendors.size(); i++) {
 
-            // Expiration date
-            String expirationText = expirationElements.get(i).getAttribute(EXPIRATION_ATTRIBUTE).replace("Exp.", "");
-            // SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yy");
-            // Date expirationDate = formatter.parse(expirationText);
+            String vendor = vendors.get(i);
+            String value = values.get(i);
+            String expiration = expirations.get(i);
 
             // Create Offer object
             String vendorName;
@@ -188,12 +195,12 @@ public class BankScraper {
                 case "Bank of America":
                     vendorName = parseBOAVendor(vendor);
                     valueList = parseBOAValue(value);
-                    expDate = parseBOAExpiration(expirationText);
+                    expDate = parseBOAExpiration(expiration);
                     break;
                 case "American Express":
                     vendorName = parseAMEXVendor(vendor);
                     valueList = parseAMEXValue(value);
-                    expDate = parseAMEXExpiration(expirationText);
+                    expDate = parseAMEXExpiration(expiration);
                     break;
                 case "Citibank":
                     vendorName = "";
@@ -214,23 +221,23 @@ public class BankScraper {
             Offer nextOffer = new Offer(BANK_NAME, vendorName, valueList[0], valueList[1], valueList[2], valueList[3],
                     expDate);
             System.out.println(nextOffer.toString());
-            dbrw.write(nextOffer);
+
+            // Add to total list
+            scrapedOffers.add(nextOffer);
         }
-        // Runtime.getRuntime().exec("taskkill /F /IM chromedriver.exe /T");
-        dbrw.close();
-        return vendorElements.size();
+        return scrapedOffers;
     }
 
     // BOA Parsers
-    private static String parseBOAVendor(String vendor) {
-        return vendor.substring(0, vendor.length() - 6);
+    static String parseBOAVendor(String vendor) {
+        return vendor.substring(0, vendor.length() - 5);
     }
 
-    private static double[] parseBOAValue(String value) {
+    static double[] parseBOAValue(String value) {
         double percent = 0.0;
         double amount = 0.0;
         double minimum = 0.0;
-        double maximum = 99999.9;
+        double maximum = 99999.99;
         if (value.contains("%")) {
             percent = Double.parseDouble(value.replace("%", "")) / 100;
         }
@@ -240,9 +247,9 @@ public class BankScraper {
         return new double[] { percent, amount, minimum, maximum };
     }
 
-    private static Date parseBOAExpiration(String expirationText) throws ParseException {
+    static Date parseBOAExpiration(String expirationText) throws ParseException {
         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yy");
-        return formatter.parse(expirationText);
+        return formatter.parse(expirationText.replace("Exp.", ""));
     }
 
     // AMEX Parsers
@@ -257,14 +264,16 @@ public class BankScraper {
         // Spend $15 or more, get 20% back, up to a total of $40
         // Get 50% back for up to 3 months, up to a total of $55. Enroll by 10/1/2022.
         // Spend $75+, get $5 back, up to 2X times (total of $10) after you Dine Small
+        // Spend $49 or more, get $15 by using the link provided.
         double percent = 0.0;
         double amount = 0.0;
         double minimum = 0.0;
         double maximum = 99999.9;
 
         // Find deal value as percent or amount
-        String dealValue = value.substring(value.toLowerCase().indexOf("get") + 4,
-                value.toLowerCase().indexOf("back") - 1);
+        String dealSubStr = value.substring(value.toLowerCase().indexOf("get") + 4);
+        String dealValue = dealSubStr.substring(0,
+                (dealSubStr.contains(" ")) ? dealSubStr.indexOf(" ") : dealSubStr.length());
         if (dealValue.contains("%")) {
             percent = Double.parseDouble(dealValue.replaceAll("[^0-9.]+", "")) / 100;
         } else {
@@ -306,7 +315,6 @@ public class BankScraper {
             cal.add(Calendar.DATE, days);
             return cal.getTime();
         } else {
-
             return formatter.parse(expirationText);
         }
     }
@@ -314,4 +322,8 @@ public class BankScraper {
     // Citi Parsers
 
     // Chase Parsers
+
+    // custom exception
+    // Make exception to ignore rows that can't parse
+    // OR THE VALUES CAN BE NULL AND A NEW COLUMN NOTES KEEPS THE VALUE
 }

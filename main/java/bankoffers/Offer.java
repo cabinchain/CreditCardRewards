@@ -3,16 +3,16 @@ package bankoffers;
 import java.util.*;
 
 public class Offer {
-    private final String card;
+    private final String bank;
     private final String vendor;
-    private final Double percent;
-    private final Double amount;
-    private final Double minimum; // minimum spent to avail
-    private final Double maximum; // maximum reward
+    private final double percent;
+    private final double amount;
+    private final double minimum; // minimum spent to avail
+    private final double maximum; // maximum reward
     private final Date expiration;
 
-    public Offer(String card, String vendor, Double percent, Double amount, Double min, Double max, Date expiration) {
-        this.card = card;
+    public Offer(String bank, String vendor, double percent, double amount, double min, double max, Date expiration) {
+        this.bank = bank;
         this.vendor = vendor;
         this.percent = percent;
         this.amount = amount;
@@ -26,27 +26,23 @@ public class Offer {
         return (currentDate.compareTo(expiration) > 0); // returns greater than 0 if current Date after the expiration
     }
 
-    public String createJSON() {
-        return "";
-    }
-
-    public Double expectedSavings(Double price) {
-        if (percent != null) {
-            return percent * price;
-        } else if (amount != null && price > minimum) {
+    public double expectedSavings(double price) {
+        if (percent != 0) {
+            return (percent * price > maximum) ? maximum : percent * price;
+        } else if (amount > 0 && price > minimum) {
             return amount;
         } else
             return 0.0;
     }
 
     public String toString() {
-        return ("Card:" + card + " Vendor:" + vendor + " Percent:" + percent + " Amount:" + amount + " Minimum:"
+        return ("bank:" + bank + " Vendor:" + vendor + " Percent:" + percent + " Amount:" + amount + " Minimum:"
                 + minimum + " Maximum:" + maximum + " Expiration:" + expiration);
     }
 
     // getters
-    public String getCard() {
-        return card;
+    public String getBank() {
+        return bank;
     }
 
     public String getVendor() {
