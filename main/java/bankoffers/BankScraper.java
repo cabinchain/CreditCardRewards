@@ -228,6 +228,7 @@ public class BankScraper {
         return scrapedOffers;
     }
 
+    // Parsers are not private for testing purposes
     // BOA Parsers
     static String parseBOAVendor(String vendor) {
         return vendor.substring(0, vendor.length() - 5);
@@ -253,11 +254,11 @@ public class BankScraper {
     }
 
     // AMEX Parsers
-    private static String parseAMEXVendor(String vendor) {
+    static String parseAMEXVendor(String vendor) {
         return vendor;
     }
 
-    private static double[] parseAMEXValue(String value) {
+    static double[] parseAMEXValue(String value) {
         // Examples:
         // Get 2% back on purchases, up to a total of $250
         // Spend $125 or more, get $25 back. Up to 2 times
@@ -268,7 +269,7 @@ public class BankScraper {
         double percent = 0.0;
         double amount = 0.0;
         double minimum = 0.0;
-        double maximum = 99999.9;
+        double maximum = 99999.99;
 
         // Find deal value as percent or amount
         String dealSubStr = value.substring(value.toLowerCase().indexOf("get") + 4);
@@ -300,7 +301,7 @@ public class BankScraper {
         return new double[] { percent, amount, minimum, maximum };
     }
 
-    private static Date parseAMEXExpiration(String expirationText) throws ParseException {
+    static Date parseAMEXExpiration(String expirationText) throws ParseException {
         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yy");
         if (expirationText.contains("Expires")) {
             int days;

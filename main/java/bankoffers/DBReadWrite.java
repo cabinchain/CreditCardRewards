@@ -5,6 +5,8 @@ import java.sql.*;
 public class DBReadWrite {
     // Variables
     private Connection connection;
+    private PreparedStatement checkOfferStmt;
+    private PreparedStatement updateExpStmt;
     private PreparedStatement newOfferStmt;
     private PreparedStatement searchByVendorStmt;
     private PreparedStatement selectOfferStmt;
@@ -31,6 +33,11 @@ public class DBReadWrite {
             return;
         }
 
+        String checkOfferString = "SELECT * FROM offers WHERE Bank_Name = ? AND Use_Type = ? AND Vendor = ? AND Percent = ? AND Amount = ? AND Min_Spend = ? AND Max_Return = ?";
+        checkOfferStmt = connection.prepareStatement(checkOfferString, Statement.RETURN_GENERATED_KEYS);
+        String updateExpString = "UPDATE offers SET Expiration_Date = ? WHERE Bank_Name = ? AND Use_Type = ? AND Vendor = ? AND Percent = ? AND Amount = ? AND Min_Spend = ? AND Max_Return = ?";
+        updateExpStmt = connection.prepareStatement(updateExpString, Statement.RETURN_GENERATED_KEYS);
+
         String newOfferString = "INSERT INTO offers (Bank_Name, Use_Type, Vendor, Percent, Amount, Min_Spend, Max_Return, Expiration_Date) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
         newOfferStmt = connection.prepareStatement(newOfferString, Statement.RETURN_GENERATED_KEYS);
         String searchByVendorString = "SELECT * FROM offers WHERE Vendor LIKE ?";
@@ -54,20 +61,53 @@ public class DBReadWrite {
     }
 
     public int write(Offer newOffer) throws SQLException { // Returns offer_id of new item written
-        newOfferStmt.setString(1, newOffer.getBank());
-        newOfferStmt.setString(2, "Single");
-        newOfferStmt.setString(3, newOffer.getVendor());
-        newOfferStmt.setDouble(4, newOffer.getPercent());
-        newOfferStmt.setDouble(5, newOffer.getAmount());
-        newOfferStmt.setDouble(6, newOffer.getMinimum());
-        newOfferStmt.setDouble(7, newOffer.getMaximum());
-        newOfferStmt.setDate(8, new java.sql.Date(newOffer.getExpiration().getTime()));
-        newOfferStmt.executeUpdate();
-        ResultSet newIDRS = newOfferStmt.getGeneratedKeys(); // this doesn't return anything if you select the key
-                                                             // yourself
-        newIDRS.next();
-        int newID = newIDRS.getInt(1);
-        return newID;
+        checkOfferStmt.setString(1, newOffer.getBank());
+        checkOfferStmt.setString(2, "Single");
+        checkOfferStmt.setString(3, newOffer.getVendor());
+        checkOfferStmt.setDouble(4, newOffer.getPercent());
+        checkOfferStmt.setDouble(5, newOffer.getAmount());
+        checkOfferStmt.setDouble(6, newOffer.getMinimum());
+        checkOfferStmt.setDouble(7, newOffer.getMaximum());
+        // checkOfferStmt.setDate(8, new
+        // java.sql.Date(newOffer.getExpiration().getTime()));
+        ResultSet foundOffer = checkOfferStmt.executeQuery();
+        if (foundOffer.next()) {
+            // If the check query pulls an exact match check expiration date
+            // If expiration date is new, update with the new date, then always return id
+            java.sql.Date newOfferDate = new java.sql.Date(newOffer.getExpiration().getTime());
+            if (foundOffer.getDate("Expiration_Date") != newOfferDate) {
+                updateExpStmt.setDate(1, new java.sql.Date(newOffer.getExpiration().getTime()));
+                updateExpStmt.setString(2, newOffer.getBank());
+                updateExpStmt.setString(3, "Single");
+                updateExpStmt.setString(4, newOffer.getVendor());
+                updateExpStmt.setDouble(5, newOffer.getPercent());
+                updateExpStmt.setDouble(6, newOffer.getAmount());
+                updateExpStmt.setDouble(7, newOffer.getMinimum());
+                updateExpStmt.setDouble(8, newOffer.getMaximum());
+                updateExpStmt.executeUpdate();
+                ResultSet newIDRS = updateExpStmt.getGeneratedKeys();
+                newIDRS.next();
+                int newID = newIDRS.getInt(1);
+                return newID;
+            }
+            return foundOffer.getInt("Offer_ID");
+        }
+
+        else { // This is a new entry, insert new row
+            newOfferStmt.setString(1, newOffer.getBank());
+            newOfferStmt.setString(2, "Single");
+            newOfferStmt.setString(3, newOffer.getVendor());
+            newOfferStmt.setDouble(4, newOffer.getPercent());
+            newOfferStmt.setDouble(5, newOffer.getAmount());
+            newOfferStmt.setDouble(6, newOffer.getMinimum());
+            newOfferStmt.setDouble(7, newOffer.getMaximum());
+            newOfferStmt.setDate(8, new java.sql.Date(newOffer.getExpiration().getTime()));
+            newOfferStmt.executeUpdate();
+            ResultSet newIDRS = newOfferStmt.getGeneratedKeys();
+            newIDRS.next();
+            int newID = newIDRS.getInt(1);
+            return newID;
+        }
     }
 
     public void displayResults(ResultSet rs) throws SQLException {

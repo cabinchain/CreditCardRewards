@@ -36,8 +36,8 @@ public class Offer {
     }
 
     public String toString() {
-        return ("bank:" + bank + " Vendor:" + vendor + " Percent:" + percent + " Amount:" + amount + " Minimum:"
-                + minimum + " Maximum:" + maximum + " Expiration:" + expiration);
+        return ("bank:" + bank + ", Vendor:" + vendor + ", Percent:" + percent + ", Amount:" + amount + ", Minimum:"
+                + minimum + ", Maximum:" + maximum + ", Expiration:" + expiration);
     }
 
     // getters
