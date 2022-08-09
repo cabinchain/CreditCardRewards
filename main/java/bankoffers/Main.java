@@ -4,16 +4,21 @@ import java.io.*;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Scanner;
 
 // To do
-// 1) Change how this waits for page to load (in bank class)
-// 3) Find all xpaths for Citi and Chase
-// 8) Create class to hold values (passed from parse function)
+// Change how this waits for page to load (in bank class)
+// For each new bank
+//      1) Add new variables in BankScraper constructor
+//      2) Update offer object in BankScraper.createOffers()
+//      3) Add to menu in main
+//      4) Parse functions in BankScraper
+//      5) Write parse tests for BankScraper
 // 9) Exception: Create custom, throw that in each parse method, then in the createOffers loop, try to create offer and catch custom exception
 //  try{creating an offer} catch{exception for parse methods} finally {close any streams}
 // 11) Date added field to database and to write function ("offer" objects do not need date added field)
+// Add amount spent field so we can calculate % savings later
 // REPLACE CONSOLE WITH SCANNER
-// BankScraper parse function tests
 
 // List of questions:
 // 1) Should write do 1 offer or an array? DO ARRAY
@@ -27,7 +32,7 @@ public class Main {
     public static void main(String[] args) throws InterruptedException, ParseException, IOException, SQLException {
 
         DBReadWrite dbrw = new DBReadWrite();
-        Console console = System.console();
+        Scanner inputs = new Scanner(System.in);
 
         int menu = 99;
         while (menu > 0) {
@@ -36,12 +41,9 @@ public class Main {
             System.out.println("2) Search Offers");
             System.out.println("3) Use Offer");
             System.out.println("0) Exit");
-            String menuString = new String(console.readLine("Selection: "));
-            try {
-                menu = Integer.parseInt(menuString);
-            } catch (NumberFormatException e) {
-                menu = 99;
-            }
+            System.out.print("Selection: ");
+            menu = inputs.nextInt();
+            inputs.nextLine();// need to consume hanging /n - do for each nextInt()
             switch (menu) {
                 case 0:
                     break;
@@ -49,16 +51,12 @@ public class Main {
                     // Select Bank
                     BankScraper selectedBank;
                     List<Offer> scrapedOffers;
-                    int bank = 0;
                     System.out.println("BANK OPTIONS:");
                     System.out.println("1) Bank of America");
                     System.out.println("2) American Express");
-                    String bankString = new String(console.readLine("Selection: "));
-                    try {
-                        bank = Integer.parseInt(bankString);
-                    } catch (NumberFormatException e) {
-                        bank = 0;
-                    }
+                    System.out.println("0) Exit");
+                    int bank = inputs.nextInt();
+                    inputs.nextLine();
                     switch (bank) {
                         case 1:
                             selectedBank = BankScraper.forBankOfAmerica();
@@ -67,41 +65,39 @@ public class Main {
                             selectedBank = BankScraper.forAmericanExpress();
                             break;
                         default:
-                            System.out.println("Please enter a valid option. Defaulted to Bank of America.");
-                            selectedBank = BankScraper.forBankOfAmerica();
+                            System.out.println("No bank selected, exiting to main menu.");
+                            selectedBank = null;
                             break;
                     }
-                    scrapedOffers = selectedBank.scrape();
-                    for (Offer next : scrapedOffers) {
-                        dbrw.write(next);
+                    try {
+                        scrapedOffers = selectedBank.scrape();
+                        for (Offer next : scrapedOffers) {
+                            dbrw.write(next);
+                        }
+                    } catch (NullPointerException e) {
+                        break;
                     }
                     break;
                 case 2:
                     // Search offer
-                    String searchString = new String(console.readLine("Search for: "));
+                    System.out.print("Search for: ");
+                    String searchString = inputs.nextLine();
                     dbrw.displayResults(dbrw.searchByVendor(searchString));
                     break;
                 case 3:
                     // Use offer
-                    int offerID;
-                    String offerIDString = new String(console.readLine("Select Offer ID: "));
-                    try {
-                        offerID = Integer.parseInt(offerIDString);
-                    } catch (NumberFormatException e) {
-                        offerID = 0;
-                    }
+                    System.out.print("Select Offer ID: ");
+                    int offerID = inputs.nextInt();
+                    inputs.nextLine();
                     Offer o = dbrw.selectOffer(offerID);
                     if (o != null) {
-                        int amount;
                         System.out.println(o.toString());
-                        String amountString = new String(console.readLine("Amount to spend: "));
-                        try {
-                            amount = Integer.parseInt(amountString);
-                        } catch (NumberFormatException e) {
-                            amount = 0;
-                        }
+                        System.out.print("Amount to spend: ");
+                        double amount = inputs.nextDouble();
+                        inputs.nextLine();
                         System.out.println("Amount saved: " + dbrw.getExpectedSavings(offerID, amount));
-                        String confirmUseString = new String(console.readLine("Confirm use of deal (y/n): "));
+                        System.out.print("Confirm use of deal (y/n): ");
+                        String confirmUseString = inputs.nextLine();
                         if (confirmUseString.compareTo("y") == 0) {
                             dbrw.useOffer(offerID, amount);
                             System.out.println("Offer # " + offerID + " used.");
@@ -116,6 +112,7 @@ public class Main {
         }
 
         System.out.println("Thank you! Goodbye!");
+        inputs.close();
         dbrw.close();
     }
 }
