@@ -189,37 +189,36 @@ public class BankScraper {
 
             // Create Offer object
             String vendorName;
-            double[] valueList;
+            OfferSavingsValues savingsValues;
             Date expDate;
             switch (BANK_NAME) {
                 case "Bank of America":
                     vendorName = parseBOAVendor(vendor);
-                    valueList = parseBOAValue(value);
+                    savingsValues = parseBOAValue(value);
                     expDate = parseBOAExpiration(expiration);
                     break;
                 case "American Express":
                     vendorName = parseAMEXVendor(vendor);
-                    valueList = parseAMEXValue(value);
+                    savingsValues = parseAMEXValue(value);
                     expDate = parseAMEXExpiration(expiration);
                     break;
                 case "Citibank":
                     vendorName = "";
-                    valueList = new double[] { 0, 0, 0, 0 };
+                    savingsValues = null;
                     expDate = new Date();
                     break;
                 case "Capital One":
                     vendorName = "";
-                    valueList = new double[] { 0, 0, 0, 0 };
+                    savingsValues = null;
                     expDate = new Date();
                     break;
                 default:
                     vendorName = "";
-                    valueList = new double[] { 0, 0, 0, 0 };
+                    savingsValues = null;
                     expDate = new Date();
             }
 
-            Offer nextOffer = new Offer(BANK_NAME, vendorName, valueList[0], valueList[1], valueList[2], valueList[3],
-                    expDate);
+            Offer nextOffer = new Offer(BANK_NAME, vendorName, savingsValues, expDate);
             System.out.println(nextOffer.toString());
 
             // Add to total list
@@ -234,18 +233,26 @@ public class BankScraper {
         return vendor.substring(0, vendor.length() - 5);
     }
 
-    static double[] parseBOAValue(String value) {
+    static OfferSavingsValues parseBOAValue(String value) {
         double percent = 0.0;
         double amount = 0.0;
         double minimum = 0.0;
         double maximum = 99999.99;
-        if (value.contains("%")) {
-            percent = Double.parseDouble(value.replace("%", "")) / 100;
+
+        // Should this be a try, catch?
+        try {
+            if (value.contains("%")) {
+                percent = Double.parseDouble(value.replace("%", "")) / 100;
+            }
+            if (value.contains("$")) {
+                amount = Double.parseDouble(value.replace("$", ""));
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Values not parseable, offer skipped: " + e);
+            return null;
         }
-        if (value.contains("$")) {
-            amount = Double.parseDouble(value.replace("$", ""));
-        }
-        return new double[] { percent, amount, minimum, maximum };
+
+        return new OfferSavingsValues(percent, amount, minimum, maximum);
     }
 
     static Date parseBOAExpiration(String expirationText) throws ParseException {
@@ -258,7 +265,7 @@ public class BankScraper {
         return vendor;
     }
 
-    static double[] parseAMEXValue(String value) {
+    static OfferSavingsValues parseAMEXValue(String value) {
         // Examples:
         // Get 2% back on purchases, up to a total of $250
         // Spend $125 or more, get $25 back. Up to 2 times
@@ -298,7 +305,7 @@ public class BankScraper {
             maximum = Double.parseDouble(tempMax.replaceAll("[^0-9.]+", ""));
         }
 
-        return new double[] { percent, amount, minimum, maximum };
+        return new OfferSavingsValues(percent, amount, minimum, maximum);
     }
 
     static Date parseAMEXExpiration(String expirationText) throws ParseException {
@@ -307,6 +314,8 @@ public class BankScraper {
             int days;
             if (expirationText.contains("tomorrow")) {
                 days = 1;
+            } else if (expirationText.contains("today")) {
+                days = 0;
             } else {
                 days = Integer.parseInt(expirationText.replaceAll("[^\\d.]", ""));
             }

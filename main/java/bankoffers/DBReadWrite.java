@@ -139,22 +139,22 @@ public class DBReadWrite {
         selectOfferStmt.setInt(1, id);
         ResultSet rs = selectOfferStmt.executeQuery();
         while (rs.next()) {
-            return new Offer(rs.getString(2), rs.getString(4), rs.getDouble(5),
-                    rs.getDouble(6), rs.getDouble(7),
-                    rs.getDouble(8), rs.getDate(9));
+            OfferSavingsValues osv = new OfferSavingsValues(rs.getDouble(5), rs.getDouble(6), rs.getDouble(7),
+                    rs.getDouble(8));
+            return new Offer(rs.getString(2), rs.getString(4), osv, rs.getDate(9));
         }
         System.out.println("No eligible offers");
         return null;
     }
 
-    public double checkOffer(int id, double spending) throws SQLException {
+    public double getExpectedSavings(int id, double spending) throws SQLException {
         Offer o = this.selectOffer(id);
         return o.expectedSavings(spending);
     }
 
     public double useOffer(int id, double spending) throws SQLException {
 
-        double savings = this.checkOffer(id, spending);
+        double savings = this.getExpectedSavings(id, spending);
 
         // Update table
         useOfferStmt.setDate(1, java.sql.Date.valueOf(java.time.LocalDate.now()));

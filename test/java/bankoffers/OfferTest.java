@@ -12,8 +12,8 @@ public class OfferTest {
 
     Date exp1 = new GregorianCalendar(2020, Calendar.FEBRUARY, 11).getTime();
     Date exp2 = new GregorianCalendar(2099, Calendar.FEBRUARY, 11).getTime();
-    private final Offer offer1 = new Offer("bank", "vendor", 0.0, 20.0, 100.0, 999999.99, exp1);
-    private final Offer offer2 = new Offer("bank", "vendor", 0.15, 0.0, 0.0, 30.0, exp2);
+    private final Offer offer1 = new Offer("bank", "vendor", new OfferSavingsValues(0.0, 20.0, 100.0, 999999.99), exp1);
+    private final Offer offer2 = new Offer("bank", "vendor", new OfferSavingsValues(0.15, 0.0, 0.0, 30.0), exp2);
 
     @Test
     public void hasExpired_Expired() {
