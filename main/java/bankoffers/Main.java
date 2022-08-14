@@ -1,8 +1,5 @@
 package bankoffers;
 
-import java.io.*;
-import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.List;
 import java.util.Scanner;
 
@@ -14,22 +11,19 @@ import java.util.Scanner;
 //      3) Add to menu in main
 //      4) Parse functions in BankScraper
 //      5) Write parse tests for BankScraper
-// 9) Exception: Create custom, throw that in each parse method, then in the createOffers loop, try to create offer and catch custom exception
-//  try{creating an offer} catch{exception for parse methods} finally {close any streams}
-// 11) Date added field to database and to write function ("offer" objects do not need date added field)
+// Date added field to database and to write function ("offer" objects do not need date added field)
 // Add amount spent field so we can calculate % savings later
-// REPLACE CONSOLE WITH SCANNER
+// Implement Citibank's Scraper as a different Class that implements (look up Interface and Abstract Class and Subclasses)
+// Can replace Date with JodaTime.
 
 // List of questions:
-// 1) Should write do 1 offer or an array? DO ARRAY
-
-// 6) Should I use more strings and create the PreparedStatement in each DBReadWrite method? That way we can piece together parts of the statement like "AND Date_Used = null"
-//      Or should this just be a stored procedure?
-// How to do custom exception? Still confused.
+// Should I use more strings and create the PreparedStatement in each DBReadWrite method? That way we can piece together parts of the statement like "AND Date_Used = null"
+//      Or should this just be a stored procedure? - Move the PreparedStatement creation into methods and decide from there.
+// Look up builder pattern for making offer so long list of parameters don't get messed up (don't do this by hand, use protocall buffer)
 
 public class Main {
 
-    public static void main(String[] args) throws InterruptedException, ParseException, IOException, SQLException {
+    public static void main(String[] args) throws Exception {
 
         DBReadWrite dbrw = new DBReadWrite();
         Scanner inputs = new Scanner(System.in);
@@ -59,10 +53,10 @@ public class Main {
                     inputs.nextLine();
                     switch (bank) {
                         case 1:
-                            selectedBank = BankScraper.forBankOfAmerica();
+                            selectedBank = StandardBankScraper.forBankOfAmerica();
                             break;
                         case 2:
-                            selectedBank = BankScraper.forAmericanExpress();
+                            selectedBank = StandardBankScraper.forAmericanExpress();
                             break;
                         default:
                             System.out.println("No bank selected, exiting to main menu.");

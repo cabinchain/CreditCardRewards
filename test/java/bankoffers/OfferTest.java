@@ -4,16 +4,14 @@ package bankoffers;
 // import java.io.*;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import java.time.LocalDate;
 
 public class OfferTest {
 
-    Date exp1 = new GregorianCalendar(2020, Calendar.FEBRUARY, 11).getTime();
-    Date exp2 = new GregorianCalendar(2099, Calendar.FEBRUARY, 11).getTime();
-    private final Offer offer1 = new Offer("bank", "vendor", new OfferSavingsValues(0.0, 20.0, 100.0, 999999.99), exp1);
-    private final Offer offer2 = new Offer("bank", "vendor", new OfferSavingsValues(0.15, 0.0, 0.0, 30.0), exp2);
+    LocalDate exp1 = LocalDate.of(2020, 2, 11);
+    LocalDate exp2 = LocalDate.of(2099, 2, 11);
+    private final Offer offer1 = new Offer("bank", "vendor", 0.0, 20.0, 100.0, 999999.99, exp1);
+    private final Offer offer2 = new Offer("bank", "vendor", 0.15, 0.0, 0.0, 30.0, exp2);
 
     @Test
     public void hasExpired_Expired() {

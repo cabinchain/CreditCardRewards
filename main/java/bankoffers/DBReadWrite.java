@@ -32,20 +32,6 @@ public class DBReadWrite {
             System.out.println("Connection Failed! Check output console");
             return;
         }
-
-        String checkOfferString = "SELECT * FROM offers WHERE Bank_Name = ? AND Use_Type = ? AND Vendor = ? AND Percent = ? AND Amount = ? AND Min_Spend = ? AND Max_Return = ?";
-        checkOfferStmt = connection.prepareStatement(checkOfferString, Statement.RETURN_GENERATED_KEYS);
-        String updateExpString = "UPDATE offers SET Expiration_Date = ? WHERE Bank_Name = ? AND Use_Type = ? AND Vendor = ? AND Percent = ? AND Amount = ? AND Min_Spend = ? AND Max_Return = ?";
-        updateExpStmt = connection.prepareStatement(updateExpString, Statement.RETURN_GENERATED_KEYS);
-
-        String newOfferString = "INSERT INTO offers (Bank_Name, Use_Type, Vendor, Percent, Amount, Min_Spend, Max_Return, Expiration_Date) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
-        newOfferStmt = connection.prepareStatement(newOfferString, Statement.RETURN_GENERATED_KEYS);
-        String searchByVendorString = "SELECT * FROM offers WHERE Vendor LIKE ?";
-        searchByVendorStmt = connection.prepareStatement(searchByVendorString, Statement.RETURN_GENERATED_KEYS);
-        String selectOfferString = "SELECT * FROM offers WHERE Offer_ID = ? AND Date_Used IS NULL";
-        selectOfferStmt = connection.prepareStatement(selectOfferString, Statement.RETURN_GENERATED_KEYS);
-        String useOfferString = "UPDATE offers SET Date_Used = ?, Amount_Saved = ? WHERE Offer_ID = ?";
-        useOfferStmt = connection.prepareStatement(useOfferString, Statement.RETURN_GENERATED_KEYS);
     }
 
     public boolean close() {
@@ -61,6 +47,8 @@ public class DBReadWrite {
     }
 
     public int write(Offer newOffer) throws SQLException { // Returns offer_id of new item written
+        String checkOfferString = "SELECT * FROM offers WHERE Bank_Name = ? AND Use_Type = ? AND Vendor = ? AND Percent = ? AND Amount = ? AND Min_Spend = ? AND Max_Return = ?";
+        checkOfferStmt = connection.prepareStatement(checkOfferString, Statement.RETURN_GENERATED_KEYS);
         checkOfferStmt.setString(1, newOffer.getBank());
         checkOfferStmt.setString(2, "Single");
         checkOfferStmt.setString(3, newOffer.getVendor());
@@ -74,9 +62,11 @@ public class DBReadWrite {
         if (foundOffer.next()) {
             // If the check query pulls an exact match check expiration date
             // If expiration date is new, update with the new date, then always return id
-            java.sql.Date newOfferDate = new java.sql.Date(newOffer.getExpiration().getTime());
+            java.sql.Date newOfferDate = java.sql.Date.valueOf(newOffer.getExpiration());
             if (foundOffer.getDate("Expiration_Date") != newOfferDate) {
-                updateExpStmt.setDate(1, new java.sql.Date(newOffer.getExpiration().getTime()));
+                String updateExpString = "UPDATE offers SET Expiration_Date = ? WHERE Bank_Name = ? AND Use_Type = ? AND Vendor = ? AND Percent = ? AND Amount = ? AND Min_Spend = ? AND Max_Return = ?";
+                updateExpStmt = connection.prepareStatement(updateExpString, Statement.RETURN_GENERATED_KEYS);
+                updateExpStmt.setDate(1, java.sql.Date.valueOf(newOffer.getExpiration()));
                 updateExpStmt.setString(2, newOffer.getBank());
                 updateExpStmt.setString(3, "Single");
                 updateExpStmt.setString(4, newOffer.getVendor());
@@ -94,6 +84,8 @@ public class DBReadWrite {
         }
 
         else { // This is a new entry, insert new row
+            String newOfferString = "INSERT INTO offers (Bank_Name, Use_Type, Vendor, Percent, Amount, Min_Spend, Max_Return, Expiration_Date) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
+            newOfferStmt = connection.prepareStatement(newOfferString, Statement.RETURN_GENERATED_KEYS);
             newOfferStmt.setString(1, newOffer.getBank());
             newOfferStmt.setString(2, "Single");
             newOfferStmt.setString(3, newOffer.getVendor());
@@ -101,7 +93,7 @@ public class DBReadWrite {
             newOfferStmt.setDouble(5, newOffer.getAmount());
             newOfferStmt.setDouble(6, newOffer.getMinimum());
             newOfferStmt.setDouble(7, newOffer.getMaximum());
-            newOfferStmt.setDate(8, new java.sql.Date(newOffer.getExpiration().getTime()));
+            newOfferStmt.setDate(8, java.sql.Date.valueOf(newOffer.getExpiration()));
             newOfferStmt.executeUpdate();
             ResultSet newIDRS = newOfferStmt.getGeneratedKeys();
             newIDRS.next();
@@ -130,18 +122,21 @@ public class DBReadWrite {
     }
 
     public ResultSet searchByVendor(String vendor) throws SQLException {
+        String searchByVendorString = "SELECT * FROM offers WHERE Vendor LIKE ?";
+        searchByVendorStmt = connection.prepareStatement(searchByVendorString, Statement.RETURN_GENERATED_KEYS);
         searchByVendorStmt.setString(1, "%" + vendor + "%");
         ResultSet foundVendors = searchByVendorStmt.executeQuery();
         return foundVendors;
     }
 
     public Offer selectOffer(int id) throws SQLException {
+        String selectOfferString = "SELECT * FROM offers WHERE Offer_ID = ? AND Date_Used IS NULL";
+        selectOfferStmt = connection.prepareStatement(selectOfferString, Statement.RETURN_GENERATED_KEYS);
         selectOfferStmt.setInt(1, id);
         ResultSet rs = selectOfferStmt.executeQuery();
         while (rs.next()) {
-            OfferSavingsValues osv = new OfferSavingsValues(rs.getDouble(5), rs.getDouble(6), rs.getDouble(7),
-                    rs.getDouble(8));
-            return new Offer(rs.getString(2), rs.getString(4), osv, rs.getDate(9));
+            return new Offer(rs.getString(2), rs.getString(4), rs.getDouble(5), rs.getDouble(6), rs.getDouble(7),
+                    rs.getDouble(8), rs.getDate(9).toLocalDate());
         }
         System.out.println("No eligible offers");
         return null;
@@ -153,10 +148,11 @@ public class DBReadWrite {
     }
 
     public double useOffer(int id, double spending) throws SQLException {
-
         double savings = this.getExpectedSavings(id, spending);
 
         // Update table
+        String useOfferString = "UPDATE offers SET Date_Used = ?, Amount_Saved = ? WHERE Offer_ID = ?";
+        useOfferStmt = connection.prepareStatement(useOfferString, Statement.RETURN_GENERATED_KEYS);
         useOfferStmt.setDate(1, java.sql.Date.valueOf(java.time.LocalDate.now()));
         useOfferStmt.setDouble(2, savings);
         useOfferStmt.setInt(3, id);
