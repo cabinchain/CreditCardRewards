@@ -40,7 +40,8 @@ public class StandardBankScraper implements BankScraper {
         BANK_OF_AMERICA,
         AMERICAN_EXPRESS,
         CITIBANK,
-        CAPITAL_ONE
+        CAPITAL_ONE,
+        CHASE
     }
 
     public static BankScraper forBankOfAmerica() {
@@ -51,13 +52,17 @@ public class StandardBankScraper implements BankScraper {
         return new StandardBankScraper(BankType.AMERICAN_EXPRESS);
     }
 
-    // public static BankScraper forCitibank() {
-    // return new StandardBankScraper(BankType.CITIBANK);
-    // }
+    public static BankScraper forCitibank() {
+        return new StandardBankScraper(BankType.CITIBANK);
+    }
 
-    // public static BankScraper forCapitalOne() {
-    // return new StandardBankScraper(BankType.CAPITAL_ONE);
-    // }
+    public static BankScraper forCapitalOne() {
+        return new StandardBankScraper(BankType.CAPITAL_ONE);
+    }
+
+    public static BankScraper forChase() {
+        return new StandardBankScraper(BankType.CHASE);
+    }
 
     private StandardBankScraper(BankType bank) {
 
@@ -108,7 +113,7 @@ public class StandardBankScraper implements BankScraper {
                 POST_LOGIN_CHECK = "";
                 OFFERS_URL = "https://online.citi.com/US/ag/merchantoffers";
                 OFFERS_PAGE_CHECK = "//*[@id=\"maincontent\"]/div/div/div/app-merchantoffers/citi-simple-layout/citi-row[1]/div/citi-column/div/citi-text-header/h1";
-                ADD_DEAL_ELEMENT = "//*[@id=\"3f531a21-679b-a47b-e3f3-79ecc5a54f99\"]"; // There
+                ADD_DEAL_ELEMENT = "//*[@id=\"3f531a21-679b-a47b-e3f3-79ecc5a54f99\"]";
                 VENDOR_NAME_ELEMENT = "//*[@id=\"loading\"]/citi-row[5]/div/citi-column/div/citi-row/div/div/div[4]/div[1]";
                 VENDOR_NAME_ATTRIBUTE = "innerHTML";
                 VALUE_ELEMENT = "";
@@ -117,18 +122,48 @@ public class StandardBankScraper implements BankScraper {
                 EXPIRATION_ATTRIBUTE = "innerHTML";
                 break;
             case CAPITAL_ONE:
-                // whatever
+                BANK_NAME = "Capital One";
+                LOGIN_URL = "https://www.capitalone.com/";
+                USERNAME_FIELD = "//*[@id=\"ods-input-0\"]";
+                PASSWORD_FIELD = "//*[@id=\"ods-input-1\"]";
+                LOGIN_BUTTON = "//*[@id=\"noAcctSubmit\"]";
+                POST_LOGIN_CHECK = "//*[@id=\"page-content\"]/div/div/div/c1-ease-root/c1-ease-core-features-header/div/header/div/div/c1-ease-profile/img";
+                OFFERS_URL = "https://capitaloneoffers.com/c1-offers/?wbPublisher=c1&viewInstanceId=62e5b1d4-5a59-4657-b6ee-e4e212b53039&initialContentSlug=ease-web-l1";
+                OFFERS_PAGE_CHECK = "//*[@id=\"root\"]/div/div/div/div[1]/div/img";
+                ADD_DEAL_ELEMENT = "//*[@id=\"root\"]/div/div/div/div[1]/span/div/div/div/div/a";
+                VENDOR_NAME_ELEMENT = "//*[@id=\"root\"]/div/div/div/div[1]/span/div/div/div/div/a/span";
+                VENDOR_NAME_ATTRIBUTE = "innerHTML";
+                VALUE_ELEMENT = "//*[@id=\"root\"]/div/div/div/div[1]/span/div/div/div/div/div/div[2]/div/div";
+                VALUE_ATTRIBUTE = "innerHTML";
+                EXPIRATION_ELEMENT = "//*[@id=\"root\"]/div/div/div/div[1]/span/div/div/div/div/a";
+                EXPIRATION_ATTRIBUTE = "innerHTML";
                 break;
+            case CHASE:
+                BANK_NAME = "Chase";
+                LOGIN_URL = "https://www.capitalone.com/";
+                USERNAME_FIELD = "//*[@id=\"ods-input-0\"]";
+                PASSWORD_FIELD = "//*[@id=\"ods-input-1\"]";
+                LOGIN_BUTTON = "//*[@id=\"noAcctSubmit\"]";
+                POST_LOGIN_CHECK = "//*[@id=\"page-content\"]/div/div/div/c1-ease-root/c1-ease-core-features-header/div/header/div/div/c1-ease-profile/img";
+                OFFERS_URL = "https://secure04ea.chase.com/web/auth/dashboard#/dashboard/overviewAds/merchantFundedOffers/index";
+                OFFERS_PAGE_CHECK = "//*[@id=\"title-SeeAllOffersHeader\"]";
+                ADD_DEAL_ELEMENT = "//*[@id=\"root\"]/div/div/div/div[1]/span/div/div/div/div/a";
+                VENDOR_NAME_ELEMENT = "//*[@id=\"root\"]/div/div/div/div[1]/span/div/div/div/div/a/span";
+                VENDOR_NAME_ATTRIBUTE = "innerHTML";
+                VALUE_ELEMENT = "//*[@id=\"root\"]/div/div/div/div[1]/span/div/div/div/div/div/div[2]/div/div";
+                VALUE_ATTRIBUTE = "innerHTML";
+                EXPIRATION_ELEMENT = "//*[@id=\"root\"]/div/div/div/div[1]/span/div/div/div/div/a";
+                EXPIRATION_ATTRIBUTE = "innerHTML";
+                break;
+
             default:
-                throw new IllegalArgumentException("idk");
+                throw new IllegalArgumentException("Something went wrong when picking a bank");
 
         }
 
     }
 
     public List<Offer> scrape() throws InterruptedException, ParseException, IOException, SQLException {
-        // Returns the number of new items added
-
         // Initialize all drivers
         Console console = System.console();
         System.setProperty(DRIVER_NAME, DRIVER_PATH);
@@ -210,9 +245,9 @@ public class StandardBankScraper implements BankScraper {
                         expDate = LocalDate.now();
                         break;
                     case "Capital One":
-                        vendorName = "";
-                        savingsValues = null;
-                        expDate = LocalDate.now();
+                        vendorName = parseCOVendor(vendor);
+                        savingsValues = parseCOValue(value);
+                        expDate = parseCOExpiration();
                         break;
                     default:
                         vendorName = "";
@@ -333,6 +368,32 @@ public class StandardBankScraper implements BankScraper {
     // Citi Parsers
 
     // Chase Parsers
+
+    // Capital One Parsers
+    static String parseCOVendor(String vendor) {
+        // " at bedbathandbeyond.com"
+        return vendor.substring(4);
+    }
+
+    static OfferSavingsValues parseCOValue(String value) {
+        double percent = 0.0;
+        double amount = 0.0;
+        double minimum = 0.0;
+        double maximum = 99999.99;
+
+        if (value.contains("%")) {
+            percent = Double.parseDouble(value.replaceAll("[^0-9.]+", "")) / 100;
+        } else {
+            amount = Double.parseDouble(value.replaceAll("[^0-9.]+", ""));
+            maximum = amount;
+        }
+
+        return new OfferSavingsValues(percent, amount, minimum, maximum);
+    }
+
+    static LocalDate parseCOExpiration() {
+        return LocalDate.of(2099, 12, 31);
+    }
 
     // custom exception
     // Make exception to ignore rows that can't parse

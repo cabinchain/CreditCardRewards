@@ -108,7 +108,8 @@ public class StandardBankScraperTest {
     }
 
     // Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
-
+    // Normally not good to test where parameters change (the date of this test will
+    // change every day). Not sure what the alternative should be.
     @Test
     public void parseAMEXExpiration_InXDays() throws ParseException {
         LocalDate in5days = LocalDate.now().plusDays(5);
@@ -128,6 +129,37 @@ public class StandardBankScraperTest {
         LocalDate tomorrow = LocalDate.now().plusDays(1);
         LocalDate testDate = StandardBankScraper.parseAMEXExpiration("Expires tomorrow");
         assertTrue(tomorrow.equals(testDate));
+    }
+
+    @Test
+    public void parseCOVendor_All() {
+        assertEquals("bedbathandbeyond.com", StandardBankScraper.parseCOVendor(" at bedbathandbeyond.com"));
+    }
+
+    // "7% back" and "$20 back";
+    // "Up to 7% back" and "Up to 20$ back";
+    @Test
+    public void parseCOValue_Percent() {
+        OfferSavingsValues COValuesPercent = StandardBankScraper.parseCOValue("7% back");
+        assertEquals(0.07, COValuesPercent.getPercent(), 0.001);
+        assertEquals(0.0, COValuesPercent.getAmount(), 0.001);
+        assertEquals(0.0, COValuesPercent.getMinimum(), 0.001);
+        assertEquals(99999.99, COValuesPercent.getMaximum(), 0.001);
+    }
+
+    @Test
+    public void parseCOValue_Amount() {
+        OfferSavingsValues COValuesPercent = StandardBankScraper.parseCOValue("$20 back");
+        assertEquals(0.0, COValuesPercent.getPercent(), 0.001);
+        assertEquals(20.0, COValuesPercent.getAmount(), 0.001);
+        assertEquals(0.0, COValuesPercent.getMinimum(), 0.001);
+        assertEquals(20.0, COValuesPercent.getMaximum(), 0.001);
+    }
+
+    @Test
+    public void parseCOExpiration() {
+        LocalDate AMEXexpDate = LocalDate.of(2099, 12, 31);
+        assertTrue(AMEXexpDate.equals(StandardBankScraper.parseCOExpiration()));
     }
 
 }

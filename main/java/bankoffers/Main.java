@@ -13,8 +13,10 @@ import java.util.Scanner;
 //      5) Write parse tests for BankScraper
 // Date added field to database and to write function ("offer" objects do not need date added field)
 // Add amount spent field so we can calculate % savings later
-// Implement Citibank's Scraper as a different Class that implements (look up Interface and Abstract Class and Subclasses)
-// Can replace Date with JodaTime.
+// Implement Citibank's Scraper as a different Class that implements BankScraper
+// Implement Chase as a different class
+// Capital one appears to block use of autmomated browser actions
+// Turn on and test all the button pressing
 
 // List of questions:
 // Should I use more strings and create the PreparedStatement in each DBReadWrite method? That way we can piece together parts of the statement like "AND Date_Used = null"
@@ -48,6 +50,7 @@ public class Main {
                     System.out.println("BANK OPTIONS:");
                     System.out.println("1) Bank of America");
                     System.out.println("2) American Express");
+                    System.out.println("3) Citibank");
                     System.out.println("0) Exit");
                     int bank = inputs.nextInt();
                     inputs.nextLine();
@@ -57,6 +60,9 @@ public class Main {
                             break;
                         case 2:
                             selectedBank = StandardBankScraper.forAmericanExpress();
+                            break;
+                        case 3:
+                            selectedBank = new CitiBankScraper();
                             break;
                         default:
                             System.out.println("No bank selected, exiting to main menu.");
