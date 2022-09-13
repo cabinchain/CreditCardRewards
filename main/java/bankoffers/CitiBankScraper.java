@@ -147,7 +147,7 @@ public class CitiBankScraper implements BankScraper {
                     savingsValues.getAmount(), savingsValues.getMinimum(), savingsValues.getMaximum(), expDate);
             System.out.println(createdOffer.toString());
 
-        } catch (NumberFormatException | ParseException e) { // Should I not catch an unchecked exception?
+        } catch (NumberFormatException | ParseException e) {
             System.out.println("Values not parseable, offer skipped: " + e);
         }
         return Optional.ofNullable(createdOffer);
